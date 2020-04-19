@@ -486,12 +486,26 @@ namespace BookReaderSrv
 				{
 					int x = (g_passing & 0xf) - 4;
 					int y = (g_passing >> 4) - 4;
+					int i = y * 8 + x;
 					if (whiteTurn)
 						y++;
 					else
 						y--;
-					int i = y * 8 + x;
-					chars[i] = whiteTurn ? 'w' : 'W';
+					if (whiteTurn)
+					{
+						if ((x > 0) && (chars[i - 1] == 'P'))
+							chars[i] = 'w';
+						if ((x < 7) && (chars[i + 1] == 'P'))
+							chars[i] = 'w';
+
+					}
+					else
+					{
+						if ((x > 0) && (chars[i - 1] == 'p'))
+							chars[i] = 'W';
+						if ((x < 7) && (chars[i + 1] == 'p'))
+							chars[i] = 'W';
+					}
 				}
 
 				return new string(chars);
