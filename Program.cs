@@ -432,28 +432,6 @@ namespace BookReaderSrv
 				whiteTurn ^= true;
 			}
 
-			string engine = args.Length > 0 ? args[0] : "";
-			string arguments = args.Length > 1 ? args[1] : "";
-			string script = args.Length > 2 ? args[2] : "";
-			Process myProcess = new Process();
-			if (File.Exists(engine))
-			{
-				myProcess.StartInfo.FileName = engine;
-				myProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(engine);
-				myProcess.StartInfo.UseShellExecute = false;
-				myProcess.StartInfo.RedirectStandardInput = true;
-				myProcess.StartInfo.Arguments = arguments;
-				myProcess.Start();
-			}
-			else
-			{
-				Console.WriteLine("info string missing engine");
-				Console.ReadLine();
-				return;
-			}
-			if (script == "")
-				Console.WriteLine("info string missing script");
-
 			string GetBoaS()
 			{
 				string result = "";
@@ -566,51 +544,6 @@ namespace BookReaderSrv
 				return mov5;
 			}
 
-			string GetMov5()
-			{
-				NameValueCollection reqparm;
-				if (!setSql)
-					return "";
-				string boaS = GetBoaS();
-				if (!whiteTurn)
-					boaS = FlipVBoaS(boaS);
-				string boa5 = BoaSToBoa5(boaS);
-				reqparm = new NameValueCollection();
-				reqparm.Add("action", "getmove");
-				reqparm.Add("boa5", boa5);
-				byte[] data;
-				try
-				{
-					data = new WebClient().UploadValues(script, "POST", reqparm);
-				}
-				catch
-				{
-					setSql = false;
-					return "";
-				}
-				string mov5 = Encoding.ASCII.GetString(data);
-				if (mov5.Length < 4)
-					return "";
-				string bsFm = Mov5ToEmo(mov5);
-				if (IsValidMove(bsFm))
-					return bsFm;
-				else
-				{
-					reqparm = new NameValueCollection();
-					reqparm.Add("action", "deleteMove");
-					reqparm.Add("boa5", boa5);
-					reqparm.Add("mov5", mov5);
-					try
-					{
-						new WebClient().UploadValues(script, "POST", reqparm);
-					}
-					catch
-					{
-					}
-					return GetMov5();
-				}
-			}
-
 			bool IsEnd()
 			{
 				if (!setSql)
@@ -667,12 +600,88 @@ namespace BookReaderSrv
 				return true;
 			}
 
+			string engine = args.Length > 0 ? args[0] : "";
+			string arguments = args.Length > 1 ? args[1] : "";
+			string script = args.Length > 2 ? args[2] : "";
+			if (args.Length == 1)
+			{
+				engine = "";
+				arguments = "";
+				script = args[0];
+			}
+			Process myProcess = new Process();
+			if (File.Exists(engine))
+			{
+				myProcess.StartInfo.FileName = engine;
+				myProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(engine);
+				myProcess.StartInfo.UseShellExecute = false;
+				myProcess.StartInfo.RedirectStandardInput = true;
+				myProcess.StartInfo.Arguments = arguments;
+				myProcess.Start();
+			}
+			else
+			{
+				if (engine != "")
+					Console.WriteLine("info string missing engine");
+				engine = "";
+			}
+			if (script == "")
+			{
+				Console.WriteLine("info string missing script");
+				return;
+			}
+
+			string GetMov5()
+			{
+				NameValueCollection reqparm;
+				if (!setSql)
+					return "";
+				string boaS = GetBoaS();
+				if (!whiteTurn)
+					boaS = FlipVBoaS(boaS);
+				string boa5 = BoaSToBoa5(boaS);
+				reqparm = new NameValueCollection();
+				reqparm.Add("action", "getmove");
+				reqparm.Add("boa5", boa5);
+				byte[] data;
+				try
+				{
+					data = new WebClient().UploadValues(script, "POST", reqparm);
+				}
+				catch
+				{
+					setSql = false;
+					return "";
+				}
+				string mov5 = Encoding.ASCII.GetString(data);
+				if (mov5.Length < 4)
+					return "";
+				string bsFm = Mov5ToEmo(mov5);
+				if (IsValidMove(bsFm))
+					return bsFm;
+				else
+				{
+					reqparm = new NameValueCollection();
+					reqparm.Add("action", "deleteMove");
+					reqparm.Add("boa5", boa5);
+					reqparm.Add("mov5", mov5);
+					try
+					{
+						new WebClient().UploadValues(script, "POST", reqparm);
+					}
+					catch
+					{
+					}
+					return GetMov5();
+				}
+			}
+
 			Initialize();
 			while (true)
 			{
 				string msg = Console.ReadLine();
 				Uci.SetMsg(msg);
-				if (Uci.command != "go")
+				if ((Uci.command != "go") && (engine != ""))
 					myProcess.StandardInput.WriteLine(msg);
 				switch (Uci.command)
 				{
@@ -695,7 +704,7 @@ namespace BookReaderSrv
 								MakeMove(mg);
 							}
 							if (IsEnd())
-							{ 
+							{
 								var reqparm = new NameValueCollection();
 								reqparm.Add("action", "setEmo");
 								reqparm.Add("moves", String.Join(" ", movesEng));
@@ -717,7 +726,9 @@ namespace BookReaderSrv
 							Console.WriteLine("info string book");
 							Console.WriteLine($"bestmove {move}");
 						}
-						else 
+						else if (engine == "")
+							Console.WriteLine("enginemove");
+						else
 							myProcess.StandardInput.WriteLine(msg);
 						break;
 				}
