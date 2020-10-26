@@ -54,6 +54,9 @@ namespace BookReaderSrv
 			List<string> movesEng = new List<string>();
 			CUci Uci = new CUci();
 			CUndo[] undoStack = new CUndo[0xfff];
+			const string getMove = "getMove";
+			const string delMove = "delMove";
+			const string addMoves = "addMoves";
 
 			string FormatMove(int move)
 			{
@@ -532,8 +535,10 @@ namespace BookReaderSrv
 				return result;
 			}
 
-			string Mov5ToEmo(string mov5)
+			string Mov5ToUmo(string mov5)
 			{
+				if (mov5.Length < 4)
+					return "";
 				if (!char.IsNumber(mov5[3]))
 				{
 					string se = mov5[2] == '2' ? "1" : "8";
@@ -641,7 +646,7 @@ namespace BookReaderSrv
 					boaS = FlipVBoaS(boaS);
 				string boa5 = BoaSToBoa5(boaS);
 				reqparm = new NameValueCollection();
-				reqparm.Add("action", "getmove");
+				reqparm.Add("action", getMove);
 				reqparm.Add("boa5", boa5);
 				byte[] data;
 				try
@@ -654,15 +659,13 @@ namespace BookReaderSrv
 					return "";
 				}
 				string mov5 = Encoding.ASCII.GetString(data);
-				if (mov5.Length < 4)
-					return "";
-				string bsFm = Mov5ToEmo(mov5);
+				string bsFm = Mov5ToUmo(mov5);
 				if (IsValidMove(bsFm))
 					return bsFm;
 				else
 				{
 					reqparm = new NameValueCollection();
-					reqparm.Add("action", "deleteMove");
+					reqparm.Add("action", delMove);
 					reqparm.Add("boa5", boa5);
 					reqparm.Add("mov5", mov5);
 					try
@@ -698,15 +701,15 @@ namespace BookReaderSrv
 							int m = Uci.GetIndex("moves", Uci.tokens.Length);
 							for (int n = m; n < Uci.tokens.Length; n++)
 							{
-								string em = Uci.tokens[n];
-								movesEng.Add(em);
-								int mg = GetMoveFromString(em);
+								string umo = Uci.tokens[n];
+								movesEng.Add(umo);
+								int mg = GetMoveFromString(umo);
 								MakeMove(mg);
 							}
 							if (IsEnd())
 							{
 								var reqparm = new NameValueCollection();
-								reqparm.Add("action", "setEmo");
+								reqparm.Add("action", addMoves);
 								reqparm.Add("moves", String.Join(" ", movesEng));
 								try
 								{
