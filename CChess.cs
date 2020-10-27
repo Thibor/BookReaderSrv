@@ -68,9 +68,10 @@ namespace BookReaderSrv
 			return arr[(square & 0xf) - 4] + (12 - (square >> 4)).ToString();
 		}
 
-		List<int> GenerateValidMoves()
+		List<int> GenerateValidMoves(out bool mate)
 		{
-			List<int> moves = new List<int>();
+			mate = false;
+			List<int> moves = new List<int>(64);
 			List<int> am = GenerateAllMoves(whiteTurn, false);
 			if (!g_inCheck)
 				for (int i = am.Count - 1; i >= 0; i--)
@@ -82,13 +83,18 @@ namespace BookReaderSrv
 						moves.Add(m);
 					UnmakeMove(m);
 				}
+			if(moves.Count == 0)
+			{
+				GenerateAllMoves(!whiteTurn, true);
+				mate = g_inCheck;
+			}
 			return moves;
 		}
 
 
 		public bool IsValidMove(string m)
 		{
-			List<int> moves = GenerateValidMoves();
+			List<int> moves = GenerateValidMoves(out _);
 			for (int i = 0; i < moves.Count; i++)
 				if (FormatMove(moves[i]) == m)
 					return true;
@@ -535,18 +541,18 @@ namespace BookReaderSrv
 		{
 			myMov = "";
 			enMov = "";
-			List<int> mu1 = GenerateValidMoves();//my last move
+			List<int> mu1 = GenerateValidMoves(out _);//my last move
 			foreach (int myMove in mu1)
 			{
 				bool myEscape = true;
 				MakeMove(myMove);
-				List<int> mu2 = GenerateValidMoves();//enemy mat move
+				List<int> mu2 = GenerateValidMoves(out _);//enemy mat move
 				foreach (int enMove in mu2)
 				{
 					bool enAttack = false;
 					MakeMove(enMove);
-					List<int> mu3 = GenerateValidMoves();//my illegal move
-					if (mu3.Count == 0)
+					List<int> mu3 = GenerateValidMoves(out bool mate);//my illegal move
+					if (mate)
 					{
 						myEscape = false;
 						enAttack = true;
