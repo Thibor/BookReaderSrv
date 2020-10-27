@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CChess.cs" />
     <Compile Include="CUci.cs" />
     <Compile Include="CUndo.cs" />
     <Compile Include="Program.cs" />
