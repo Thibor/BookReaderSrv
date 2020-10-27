@@ -531,5 +531,38 @@ namespace BookReaderSrv
 			return mov5;
 		}
 
+		public bool Is2ToEnd(out string myMov, out string enMov)
+		{
+			myMov = "";
+			enMov = "";
+			List<int> mu1 = GenerateValidMoves();//my last move
+			foreach (int myMove in mu1)
+			{
+				bool myEscape = true;
+				MakeMove(myMove);
+				List<int> mu2 = GenerateValidMoves();//enemy mat move
+				foreach (int enMove in mu2)
+				{
+					bool enAttack = false;
+					MakeMove(enMove);
+					List<int> mu3 = GenerateValidMoves();//my illegal move
+					if (mu3.Count == 0)
+					{
+						myEscape = false;
+						enAttack = true;
+						myMov = FormatMove(myMove);
+						enMov = FormatMove(enMove);
+					}
+					UnmakeMove(enMove);
+					if (enAttack)
+						continue;
+				}
+				UnmakeMove(myMove);
+				if (myEscape)
+					return false;
+			}
+			return true;
+		}
+
 	}
 }

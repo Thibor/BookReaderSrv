@@ -80,74 +80,20 @@ namespace BookReaderSrv
 				string umo = Chess.Mov5ToUmo(mov5);
 				if (Chess.IsValidMove(umo))
 					return umo;
-					reqparm = new NameValueCollection
+				reqparm = new NameValueCollection
 					{
 						{ "action", delMove },
 						{ "boa5", boa5 },
 						{ "mov5", mov5 }
 					};
-					try
-					{
-						new WebClient().UploadValues(script, "POST", reqparm);
-					}
-					catch
-					{
-					}
-					return "";
-			}
-
-			bool IsEnd()
-			{
-				if (!setSql)
-					return false;
-				bool example = false;
-				List<int> mu1 = Chess.GenerateAllMoves(Chess.whiteTurn, false);//my last move
-				for (int n1 = 0; n1 < mu1.Count; n1++)
+				try
 				{
-					int myMove = mu1[n1];
-					Chess.MakeMove(myMove);
-					List<int> mu2 = Chess.GenerateAllMoves(Chess.whiteTurn, false);//enemy mat move
-					if (Chess.g_inCheck)
-					{
-						Chess.UnmakeMove(myMove);
-						continue;
-					}
-					bool mye = false;
-					for (int n2 = 0; n2 < mu2.Count; n2++)
-					{
-						int enMove = mu2[n2];
-						Chess.MakeMove(enMove);
-						List<int> mu3 = Chess.GenerateAllMoves(Chess.whiteTurn, false);//my illegal move
-						if (Chess.g_inCheck)
-						{
-							Chess.UnmakeMove(enMove);
-							continue;
-						}
-						bool ene = true;
-						for (int n3 = 0; n3 < mu3.Count; n3++)
-						{
-							int m3 = mu3[n3];
-							Chess.MakeMove(m3);
-							Chess.GenerateAllMoves(Chess.whiteTurn, false);//enemy killing move
-							if (!Chess.g_inCheck)
-								ene = false;
-							Chess.UnmakeMove(m3);
-						}
-						if (ene)
-							mye = true;
-						if (ene && !example)
-						{
-							example = true;
-							movesEng.Add(Chess.FormatMove(myMove));
-							movesEng.Add(Chess.FormatMove(enMove));
-						}
-						Chess.UnmakeMove(enMove);
-					}
-					Chess.UnmakeMove(myMove);
-					if (!mye)
-						return false;
+					new WebClient().UploadValues(script, "POST", reqparm);
 				}
-				return true;
+				catch
+				{
+				}
+				return "";
 			}
 
 			while (true)
@@ -176,8 +122,10 @@ namespace BookReaderSrv
 								int mg = Chess.GetMoveFromString(umo);
 								Chess.MakeMove(mg);
 							}
-							if (IsEnd())
+							if (setSql && Chess.Is2ToEnd(out string mm, out string em))
 							{
+								movesEng.Add(mm);
+								movesEng.Add(em);
 								var reqparm = new NameValueCollection
 								{
 									{ "action", addMoves },
