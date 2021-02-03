@@ -29,7 +29,7 @@ namespace BookReaderSrv
 		int g_passing = 0;
 		int g_move50 = 0;
 		public bool g_inCheck = false;
-		int g_lastCastle = 0;
+		int g_lastCastle = colorEmpty;
 		int undoIndex = 0;
 		int[] arrField = new int[64];
 		int[] g_board = new int[256];
@@ -111,7 +111,7 @@ namespace BookReaderSrv
 
 		void GenerateMove(List<int> moves, int fr, int to, bool add, int flag)
 		{
-			if (((g_board[to] & 7) == pieceKing) || (((boardCheck[to] & g_lastCastle) == g_lastCastle) && ((g_lastCastle & maskCastle) > 0)))
+			if (((g_board[to] & 7) == pieceKing) || ((boardCheck[to] & g_lastCastle) == g_lastCastle))
 				g_inCheck = true;
 			else if (add)
 				moves.Add(fr | (to << 8) | flag);
@@ -261,6 +261,7 @@ namespace BookReaderSrv
 
 		public void InitializeFromFen(string fen)
 		{
+			g_lastCastle = colorEmpty;
 			for (int n = 0; n < 64; n++)
 				g_board[arrField[n]] = colorEmpty;
 			if (fen == "") fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -337,14 +338,16 @@ namespace BookReaderSrv
 			int piecefr = g_board[fr];
 			int piece = piecefr & 0xf;
 			g_captured = g_board[to];
-			g_lastCastle = (move & maskCastle) | (piecefr & maskColor);
+			g_lastCastle = colorEmpty;
 			if ((flags & moveflagCastleKing) > 0)
 			{
+				g_lastCastle = moveflagCastleKing | (piecefr & maskColor);
 				g_board[to - 1] = g_board[to + 1];
 				g_board[to + 1] = colorEmpty;
 			}
 			else if ((flags & moveflagCastleQueen) > 0)
 			{
+				g_lastCastle = moveflagCastleQueen | (piecefr & maskColor);
 				g_board[to + 1] = g_board[to - 2];
 				g_board[to - 2] = colorEmpty;
 			}

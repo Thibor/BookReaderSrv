@@ -19,15 +19,39 @@ namespace BookReaderSrv
 			const string getMove = "getmove";
 			const string delMove = "deleteMove";
 			const string addMoves = "setEmo";
-			string engine = args.Length > 0 ? args[0] : "";
-			string arguments = args.Length > 1 ? args[1] : "";
-			string script = args.Length > 2 ? args[2] : "";
-			if (args.Length == 1)
+			string ax = "-sc";
+			List<string> listSc = new List<string>();
+			List<string> listEf = new List<string>();
+			List<string> listEa = new List<string>();
+			for (int n = 0; n < args.Length; n++)
 			{
-				engine = "";
-				arguments = "";
-				script = args[0];
+				string ac = args[n];
+				switch (ac)
+				{
+					case "-sc":
+					case "-ef":
+					case "-ea":
+						ax = ac;
+						break;
+					default:
+						switch (ax)
+						{
+							case "-sc":
+								listSc.Add(ac);
+								break;
+							case "-ef":
+								listEf.Add(ac);
+								break;
+							case "-ea":
+								listEa.Add(ac);
+								break;
+						}
+						break;
+				}
 			}
+			string script = String.Join(" ", listSc);
+			string engine = String.Join(" ", listEf);
+			string arguments = String.Join(" ", listEa);
 			Process myProcess = new Process();
 			if (File.Exists(engine))
 			{
