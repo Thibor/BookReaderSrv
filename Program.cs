@@ -5,8 +5,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Text;
+using NSUci;
 
-namespace BookReaderSrv
+namespace NSProgram
 {
 	class Program
 	{
@@ -14,7 +15,7 @@ namespace BookReaderSrv
 		{
 			bool setSql = true;
 			List<string> movesEng = new List<string>();
-			CChess Chess = new CChess();
+			CChessExt Chess = new CChessExt();
 			CUci Uci = new CUci();
 			const string getMove = "getmove";
 			const string delMove = "deleteMove";
@@ -64,14 +65,22 @@ namespace BookReaderSrv
 			}
 			else
 			{
-				if (engine != "")
+				if (String.IsNullOrEmpty(engine))
 					Console.WriteLine("info string missing engine");
-				engine = "";
+				engine = String.Empty;
 			}
-			if (script == "")
+			if (String.IsNullOrEmpty(script))
 			{
 				Console.WriteLine("info string missing script");
 				return;
+			}
+
+			int MatToMate(sbyte mat)
+			{
+				if (mat >= 0)
+					return 128 - mat;
+				else
+					return -129 - mat;
 			}
 
 			string GetMov5()
@@ -98,12 +107,20 @@ namespace BookReaderSrv
 					setSql = false;
 					return "";
 				}
-				string mov5 = Encoding.ASCII.GetString(data);
-				if (mov5.Length < 4)
-					return "";
+				string response = Encoding.UTF8.GetString(data).Trim();
+				string[] arrRes = response.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+				if (arrRes.Length == 0)
+					return String.Empty;
+				string mov5 = arrRes[0];
 				string umo = Chess.Mov5ToUmo(mov5);
-				if (Chess.IsValidMove(umo))
+				if (Chess.IsValidMove(umo,out _))
+				{
+					int mate = arrRes.Length > 1 ? MatToMate(Convert.ToSByte(arrRes[1])) : 0;
+					string m = mate != 0 ? $" {mate:+#;-#}M" : String.Empty;
+					string c = arrRes.Length > 2 ? $" ({arrRes[2]})" : String.Empty;
+					Console.WriteLine($"info string book {umo}{m}{c}");
 					return umo;
+				}
 				reqparm = new NameValueCollection
 					{
 						{ "action", delMove },
@@ -117,34 +134,33 @@ namespace BookReaderSrv
 				catch
 				{
 				}
-				return "";
+				return String.Empty;
 			}
 
 			while (true)
 			{
 				string msg = Console.ReadLine();
 				Uci.SetMsg(msg);
-				if ((Uci.command != "go") && (engine != ""))
+				if ((Uci.command != "go") && (engine != String.Empty))
 					myProcess.StandardInput.WriteLine(msg);
 				switch (Uci.command)
 				{
 					case "ucinewgame":
-						setSql = script != "";
+						setSql = !String.IsNullOrEmpty(script);
 						break;
 					case "position":
-						Chess.InitializeFromFen("");
+						Chess.SetFen();
 						movesEng.Clear();
-						if (Uci.GetIndex("fen", 0) > 0)
+						if (Uci.GetIndex("fen") > 0)
 							setSql = false;
 						else
 						{
 							int m = Uci.GetIndex("moves", Uci.tokens.Length);
-							for (int n = m; n < Uci.tokens.Length; n++)
+							for (int n = m + 1; n < Uci.tokens.Length; n++)
 							{
 								string umo = Uci.tokens[n];
 								movesEng.Add(umo);
-								int mg = Chess.GetMoveFromString(umo);
-								Chess.MakeMove(mg);
+								Chess.MakeMove(umo,out _);
 							}
 							if (setSql && Chess.Is2ToEnd(out string mm, out string em))
 							{
@@ -170,7 +186,7 @@ namespace BookReaderSrv
 						string move = GetMov5();
 						if (move != "")
 							Console.WriteLine($"bestmove {move}");
-						else if (engine == "")
+						else if (String.IsNullOrEmpty(engine))
 							Console.WriteLine("enginemove");
 						else
 							myProcess.StandardInput.WriteLine(msg);
