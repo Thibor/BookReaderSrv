@@ -88,7 +88,7 @@ namespace NSProgram
 		public string BoaSToBoa5(string boaS)
 		{
 			char[] chars = boaS.ToCharArray();
-			string result = "";
+			string result = string.Empty;
 			int empty = 0;
 			for (int x = 0; x < 64; x++)
 			{
@@ -117,6 +117,23 @@ namespace NSProgram
 			if (!whiteTurn)
 				mov5 = FlipVUmo(mov5);
 			return mov5;
+		}
+
+		public string GetBoa5()
+		{
+			string boaS = GetBoaS();
+			if (!whiteTurn)
+				boaS = FlipVBoaS(boaS);
+			return BoaSToBoa5(boaS);
+		}
+
+		public string UmoToMov5(string umo)
+		{
+			if (!whiteTurn)
+				umo = FlipVUmo(umo);
+			if (umo.Length > 4)
+				umo = umo.Remove(3, 1);
+			return umo;
 		}
 
 		public bool Is2ToEnd(out string myMov, out string enMov)
