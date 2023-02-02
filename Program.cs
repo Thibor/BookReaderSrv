@@ -101,12 +101,12 @@ namespace NSProgram
 								CChessExt ch = new CChessExt();
 								for (int n = 0; n < am.Length; n++)
 								{
-									if (((n & 1) == loose) && (n != missingIndex))
-										continue;
 									string m = am[n];
 									string boa5 = ch.GetBoa5();
 									string mov5 = ch.UmoToMov5(m);
 									ch.MakeMove(m, out _);
+									if (((n & 1) == loose) && (n != missingIndex))
+										continue;
 									Add5(boa5,mov5);
 									if (n > missingIndex + 1)
 										break;
