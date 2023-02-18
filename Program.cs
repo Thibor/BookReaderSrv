@@ -97,20 +97,24 @@ namespace NSProgram
 							{
 								string movesUci = $"{lastMoves} {myMove} {enMove}";
 								string[] am = movesUci.Split();
-								int loose = missingIndex & 1;
+								int win = am.Length & 1;
+								List<string> sl = new List<string>();
 								CChessExt ch = new CChessExt();
 								for (int n = 0; n < am.Length; n++)
 								{
 									string m = am[n];
 									string boa5 = ch.GetBoa5();
 									string mov5 = ch.UmoToMov5(m);
+									sl.Add(boa5);
+									sl.Add(mov5);
 									ch.MakeMove(m, out _);
-									if (((n & 1) == loose) && (n != missingIndex))
-										continue;
-									Add5(boa5,mov5);
-									if (n > missingIndex + 1)
+									Add5(boa5, mov5);
+									if ((n > missingIndex + 1) && ((n & 1) == win))
 										break;
 								}
+								am = sl.ToArray();
+								string moves = string.Join(" ", am);
+								SetMoves(moves);
 								setSql = false;
 							}
 						}
@@ -134,9 +138,23 @@ namespace NSProgram
 				}
 			} while (uci.command != "quit");
 
-			bool Add5(string boa5,string mov5)
+			bool SetMoves(string moves)
 			{
-				NameValueCollection nvc = new NameValueCollection { { "action", "add5" }, { "boa5", boa5 }, {"mov5",mov5 } };
+				NameValueCollection nvc = new NameValueCollection { { "action", "setmoves" }, { "moves", moves } };
+				try
+				{
+					new WebClient().UploadValues(script, "POST", nvc);
+				}
+				catch
+				{
+					return false;
+				}
+				return true;
+			}
+
+			bool Add5(string boa5, string mov5)
+			{
+				NameValueCollection nvc = new NameValueCollection { { "action", "add5" }, { "boa5", boa5 }, { "mov5", mov5 } };
 				try
 				{
 					new WebClient().UploadValues(script, "POST", nvc);
@@ -162,12 +180,12 @@ namespace NSProgram
 				catch
 				{
 					setSql = false;
-					return String.Empty;
+					return string.Empty;
 				}
 				string response = Encoding.UTF8.GetString(data).Trim();
-				string[] arrRes = response.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-				if (arrRes.Length == 0)
-					return String.Empty;
+				if (string.IsNullOrEmpty(response))
+					return string.Empty;
+				string[] arrRes = response.Split();
 				string mov5 = arrRes[0];
 				string umo = chess.Mov5ToUmo(mov5);
 				if (chess.IsValidMove(umo, out _))
@@ -175,11 +193,11 @@ namespace NSProgram
 					Console.WriteLine($"info string book {umo} games {arrRes[1]} possible {arrRes[2]}");
 					return umo;
 				}
-				Del5(boa5,mov5);
-				return String.Empty;
+				Del5(boa5, mov5);
+				return string.Empty;
 			}
 
-			bool Del5(string boa5,string mov5)
+			bool Del5(string boa5, string mov5)
 			{
 				NameValueCollection nvc = new NameValueCollection { { "action", "del5" }, { "boa5", boa5 }, { "mov5", mov5 } };
 				try
